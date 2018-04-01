@@ -28,7 +28,7 @@ title_font = ('Times New Roman', 12)
 authors_font = ('Ariel', 8)
 journals_font = ('Times New Roman', 18, 'underline')
 
-page_depth = 4  # how many pages of each Journal should be searched through
+page_depth = 4 # how many pages of each Journal should be searched through
 
 
 
@@ -272,15 +272,35 @@ class Filters(tk.Frame):
         search_box.grid(row=row, column=0, padx=3, pady=20, sticky='w')
         search_button = tk.Button(self, text='Search', command=self._search)
         search_button.grid(row=row, column=1, sticky='w')
+        
         row += 1
         self.num_results = tk.StringVar()
         self._count_results()
         results_label = tk.Label(self, textvariable=self.num_results, bg=filters_bg)
         results_label.grid(row=row, column=0)
+        
         row += 1
         format_line = tk.Label(self, text='_'*40, bg=filters_bg)
         format_line.grid(row=row, column=0)
+        
         row += 1
+        journal_filter_label = tk.Label(self, text='Journals:', bg=filters_bg, font=('Times New Roman', 12, 'underline'))
+        journal_filter_label.grid(row=row, column=0, pady=(15, 0), sticky='w')
+        
+        row += 1
+        self.prb_toggle = tk.IntVar(root, value=1)
+        prb_toggle_button = tk.Checkbutton(self, text='Physical Review B', variable=self.prb_toggle, bg=filters_bg)
+        prb_toggle_button.grid(row=row, column=0, padx=15, sticky='w')
+        
+        row += 1
+        self.nat_toggle = tk.IntVar(root, value=1)
+        nat_toggle_button = tk.Checkbutton(self, text='Nature', variable=self.nat_toggle, bg=filters_bg)
+        nat_toggle_button.grid(row=row, column=0, padx=15, sticky='w')
+        
+        row += 1
+        self.arx_toggle = tk.IntVar(root, value=1)
+        arx_toggle_button = tk.Checkbutton(self, text='arXiv', variable=self.arx_toggle, bg=filters_bg)
+        arx_toggle_button.grid(row=row, column=0, padx=15, sticky='w')
         
         root.bind('<Return>', self._search)
     
@@ -288,7 +308,7 @@ class Filters(tk.Frame):
     def _search(self, event=1):
         self._searched = True
         search_str = self.search_str.get().lower()
-        
+
         self.prb_hits = {}
         for key in self.root.elements[Papers].prb_papers.keys():
             paper = self.root.elements[Papers].prb_papers[key]
@@ -311,15 +331,15 @@ class Filters(tk.Frame):
             self.root.elements[Papers].labels[key].destroy()
 
         self.root.elements[Papers].row = 0
-        if len(self.prb_hits) > 0:
+        if len(self.prb_hits) > 0 and self.prb_toggle.get() == 1:
             self.root.elements[Papers].show_papers(self.prb_hits)
         else:
             self.root.elements[Papers].prb_papers_label.grid_forget()
-        if len(self.nat_hits) > 0:
+        if len(self.nat_hits) > 0 and self.nat_toggle.get() == 1:
             self.root.elements[Papers].show_papers(self.nat_hits)
         else:
             self.root.elements[Papers].nat_papers_label.grid_forget()
-        if len(self.arx_hits) > 0:
+        if len(self.arx_hits) > 0 and self.arx_toggle.get() == 1:
             self.root.elements[Papers].show_papers(self.arx_hits)
         else:
             self.root.elements[Papers].arx_papers_label.grid_forget()
