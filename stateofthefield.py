@@ -12,7 +12,7 @@ Supported Journals include:
     - arXiv
 
 
-@author: jgwillin
+@author: jgwillingham
 """
 
 import tkinter as tk
