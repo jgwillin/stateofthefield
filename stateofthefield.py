@@ -241,17 +241,17 @@ class Papers(tk.Canvas):
             def abstract_callback(papers=papers, paper=paper):
                 self._get_abstract(papers, paper)
             abstract_callbacks[title] = abstract_callback
-            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, cursor='hand2', padx=40, wraplength=1200, justify='left')
+            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, cursor='hand2', wraplength=1200, justify='left')
             self.labels[title].bind('<Button-1>', link_callbacks[title])
-            self.labels[title].grid(row=self.row, column=1, sticky='w')
+            self.labels[title].grid(row=self.row, column=1, padx=40, sticky='w')
             self.row += 1
-            self.labels[title+'-authors'] = tk.Label(self.frame, text=authors, font=authors_font, bg=papers_bg, padx=100, wraplength=1200, justify='left')
-            self.labels[title+'-authors'].grid(row=self.row, column=1, sticky='w')
+            self.labels[title+'-authors'] = tk.Label(self.frame, text=authors, font=authors_font, bg=papers_bg, wraplength=1200, justify='left')
+            self.labels[title+'-authors'].grid(row=self.row, column=1, padx=100, sticky='w')
             self.row +=1
-            self.labels[title+'-pubinfo'] = tk.Label(self.frame, text=pubinfo+'\n', font=authors_font, bg=papers_bg, padx=100, wraplength=1200, justify='left')
-            self.labels[title+'-pubinfo'].grid(row=self.row, column=1, sticky='w')
+            self.labels[title+'-pubinfo'] = tk.Label(self.frame, text=pubinfo+'\n', font=authors_font, bg=papers_bg, wraplength=1200, justify='left')
+            self.labels[title+'-pubinfo'].grid(row=self.row, column=1, padx=100, sticky='w')
             self.labels[title+'-get_abstract'] = tk.Button(self.frame, text='Abstract', command=abstract_callbacks[title], bg=button_color, font=authors_font)
-            self.labels[title+'-get_abstract'].grid(row=self.row, column=1, padx=200, pady=(0, 35))
+            self.labels[title+'-get_abstract'].grid(row=self.row, column=1, padx=(200, 0), pady=(0, 35))
             self.row += 1
     
     
@@ -262,12 +262,12 @@ class Papers(tk.Canvas):
             paper_page_html = url.urlopen(link)
             paper_page = BeautifulSoup(paper_page_html, 'lxml')
             
-            if journal == self.prb_papers:
+            if journal == self.prb_papers or journal == self.root.elements[Filters].prb_hits:
                 abstract = paper_page.find_all('p')[0].text
-            if journal == self.nat_papers:
+            if journal == self.nat_papers or journal == self.root.elements[Filters].nat_hits:
                 abstract = paper_page.find_all('p')[4].text
-            if journal == self.arx_papers:
-                pass
+            if journal == self.arx_papers or journal == self.root.elements[Filters].arx_hits:
+                abstract = paper_page.find_all('blockquote')[0].text.split('Abstract: ')[1]
             journal[paper]['abstract'] = abstract
         else:
             abstract = journal[paper]['abstract']
