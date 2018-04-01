@@ -12,7 +12,7 @@ Supported Journals include:
     - arXiv
 
 
-@author: George Willingham
+@author: jgwillin
 """
 
 import tkinter as tk
@@ -52,7 +52,7 @@ class Main(tk.Tk):
         self.elements[Papers] = Papers(container, self)
         self.elements[Papers].pack(side='left', fill='both', expand=True)
         self.title('State of the Field')
-        self.iconbitmap(r'C:\Users\George Willingham\Documents\Code\Personal Projects\State of the Field\app-icon2.ico')
+#        self.iconbitmap(r'C:\Users\George Willingham\Documents\Code\Personal Projects\State of the Field\app-icon2.ico')
             
 
 class Papers(tk.Canvas):
