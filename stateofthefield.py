@@ -22,13 +22,18 @@ import webbrowser
 
 
 papers_bg = 'white'
-bordercolor='red4'
-filters_bg='grey'
+bordercolor = 'red4'
+filters_bg = 'gray70'
+button_color = 'gray90'
+abstract_bg = 'white'
+
 title_font = ('Times New Roman', 12)
 authors_font = ('Ariel', 8)
 journals_font = ('Times New Roman', 18, 'underline')
+filters_font = ('Times New Roman', 15, 'underline')
+filters_list_font = ('Times New Roman', 12)
 
-page_depth = 4 # how many pages of each Journal should be searched through
+page_depth = 1 # how many pages of each Journal should be searched through
 
 
 
@@ -110,7 +115,8 @@ class Papers(tk.Canvas):
                         'title':title,
                         'authors':authors,
                         'link':link,
-                        'pubinfo':pubinfo
+                        'pubinfo':pubinfo,
+                        'abstract':''
                         }
                 inx += 1
         self.prb_papers = prb_papers
@@ -146,7 +152,8 @@ class Papers(tk.Canvas):
                       'title':title,
                       'authors':authors, 
                       'link':link, 
-                      'pubinfo':pubinfo+' \u2013 Recent'
+                      'pubinfo':pubinfo+' \u2013 Recent',
+                      'abstract':''
                       }
         self.arx_papers = arx_papers
         self.arx_papers_label = tk.Label(self.frame, text='\tarXiv\n', font=journals_font, bg=papers_bg)
@@ -200,7 +207,8 @@ class Papers(tk.Canvas):
                     'title':title,
                     'authors':authors,
                     'link':link,
-                    'pubinfo':pubinfo
+                    'pubinfo':pubinfo,
+                    'abstract':''
                     }
         self.nat_papers = nat_papers
         self.nat_papers_label = tk.Label(self.frame, text='\tNature\n', font=journals_font, bg=papers_bg)
@@ -221,14 +229,18 @@ class Papers(tk.Canvas):
 
         self.row += 1
         link_callbacks = {}
+        abstract_callbacks = {}
         for paper in papers.keys():
             title = papers[paper]['title']
             authors = papers[paper]['authors']
             link = papers[paper]['link']
             pubinfo = papers[paper]['pubinfo']
-            def callback(event, link=link):
+            def link_callback(event, link=link):
                 webbrowser.open_new(link)
-            link_callbacks[title] = callback
+            link_callbacks[title] = link_callback
+            def abstract_callback(papers=papers, paper=paper):
+                self._get_abstract(papers, paper)
+            abstract_callbacks[title] = abstract_callback
             self.labels[title] = tk.Label(self.frame, text=title, font=title_font, cursor='hand2', padx=40, wraplength=1200, justify='left')
             self.labels[title].bind('<Button-1>', link_callbacks[title])
             self.labels[title].grid(row=self.row, column=1, sticky='w')
@@ -238,7 +250,40 @@ class Papers(tk.Canvas):
             self.row +=1
             self.labels[title+'-pubinfo'] = tk.Label(self.frame, text=pubinfo+'\n', font=authors_font, bg=papers_bg, padx=100, wraplength=1200, justify='left')
             self.labels[title+'-pubinfo'].grid(row=self.row, column=1, sticky='w')
-            self.row+=1
+            self.labels[title+'-get_abstract'] = tk.Button(self.frame, text='Abstract', command=abstract_callbacks[title], bg=button_color, font=authors_font)
+            self.labels[title+'-get_abstract'].grid(row=self.row, column=1, padx=200, pady=(0, 35))
+            self.row += 1
+    
+    
+    def _get_abstract(self, journal, paper):
+        self.update_idletasks()
+        if journal[paper]['abstract'] == '':
+            link = journal[paper]['link']
+            paper_page_html = url.urlopen(link)
+            paper_page = BeautifulSoup(paper_page_html, 'lxml')
+            
+            if journal == self.prb_papers:
+                abstract = paper_page.find_all('p')[0].text
+            if journal == self.nat_papers:
+                pass
+            if journal == self.arx_papers:
+                pass
+            journal[paper]['abstract'] = abstract
+        else:
+            abstract = journal[paper]['abstract']
+        
+        abstract_window = tk.Tk()
+        abstract_window.title('')
+        aw_frame = tk.Frame(abstract_window, bg=abstract_bg)
+        aw_frame.pack(side='top', fill='both', expand=True)
+        
+        title_label = tk.Label(aw_frame, text=paper, font=title_font, bg=abstract_bg, wraplength=900, justify='left')
+        title_label.grid(row=0, column=0, padx=40, sticky='w')
+        authors_label = tk.Label(aw_frame, text=journal[paper]['authors'], font=authors_font, bg=abstract_bg, wraplength=800, justify='left')
+        authors_label.grid(row=1, column=0, padx=40, sticky='w')
+        text = tk.Label(aw_frame, text=abstract, wraplength=800, bg=abstract_bg, justify='left')
+        text.grid(row=2, column=0, sticky='w', padx=65, pady=40)
+        
         
 
     def _on_configure(self, event):
@@ -284,23 +329,24 @@ class Filters(tk.Frame):
         format_line.grid(row=row, column=0)
         
         row += 1
-        journal_filter_label = tk.Label(self, text='Journals:', bg=filters_bg, font=('Times New Roman', 12, 'underline'))
-        journal_filter_label.grid(row=row, column=0, pady=(15, 0), sticky='w')
+        journal_filter_label = tk.Label(self, text='Journals:', bg=filters_bg, font=filters_font)
+        journal_filter_label.grid(row=row, column=0, padx=25, pady=(15, 0), sticky='w')
+        
         
         row += 1
         self.prb_toggle = tk.IntVar(root, value=1)
-        prb_toggle_button = tk.Checkbutton(self, text='Physical Review B', variable=self.prb_toggle, bg=filters_bg)
-        prb_toggle_button.grid(row=row, column=0, padx=15, sticky='w')
+        prb_toggle_button = tk.Checkbutton(self, text='Physical Review B', variable=self.prb_toggle, font=filters_list_font, bg=filters_bg)
+        prb_toggle_button.grid(row=row, column=0, padx=25, sticky='w')
         
         row += 1
         self.nat_toggle = tk.IntVar(root, value=1)
-        nat_toggle_button = tk.Checkbutton(self, text='Nature', variable=self.nat_toggle, bg=filters_bg)
-        nat_toggle_button.grid(row=row, column=0, padx=15, sticky='w')
+        nat_toggle_button = tk.Checkbutton(self, text='Nature', variable=self.nat_toggle, font=filters_list_font, bg=filters_bg)
+        nat_toggle_button.grid(row=row, column=0, padx=25, sticky='w')
         
         row += 1
         self.arx_toggle = tk.IntVar(root, value=1)
-        arx_toggle_button = tk.Checkbutton(self, text='arXiv', variable=self.arx_toggle, bg=filters_bg)
-        arx_toggle_button.grid(row=row, column=0, padx=15, sticky='w')
+        arx_toggle_button = tk.Checkbutton(self, text='arXiv', variable=self.arx_toggle, font=filters_list_font, bg=filters_bg)
+        arx_toggle_button.grid(row=row, column=0, padx=25, sticky='w')
         
         root.bind('<Return>', self._search)
     
@@ -312,19 +358,19 @@ class Filters(tk.Frame):
         self.prb_hits = {}
         for key in self.root.elements[Papers].prb_papers.keys():
             paper = self.root.elements[Papers].prb_papers[key]
-            if search_str in paper['title'].lower(): # or search_str in paper['abstract']:
+            if search_str in paper['title'].lower() or search_str in paper['abstract']:
                 self.prb_hits[paper['title']] = paper
         
         self.nat_hits = {}
         for key in self.root.elements[Papers].nat_papers.keys():
             paper = self.root.elements[Papers].nat_papers[key]
-            if search_str in paper['title'].lower():
+            if search_str in paper['title'].lower() or search_str in paper['abstract']:
                 self.nat_hits[paper['title']] = paper
     
         self.arx_hits = {}
         for key in self.root.elements[Papers].arx_papers.keys():
             paper = self.root.elements[Papers].arx_papers[key]
-            if search_str in paper['title'].lower(): # or search_str in paper['abstract']:
+            if search_str in paper['title'].lower() or search_str in paper['abstract']:
                 self.arx_hits[paper['title']] = paper   
         
         for key in self.root.elements[Papers].labels.keys():
@@ -355,15 +401,6 @@ class Filters(tk.Frame):
             num = 'Search to see number of'
         self.num_results.set(f'{num} results')
 
-
-    def get_abstracts(self):
-        papers = self.root.elements[Papers].prb_papers
-        for key in papers.keys():
-            link = papers[key]['link']
-            paper_page_html = url.urlopen(link)
-            paper_page = BeautifulSoup(paper_page_html, 'lxml')
-            abstract = paper_page.find_all('p')[0].text
-            self.root.elements[Papers].prb_papers[key]['abstract'] = abstract
         
         
         
