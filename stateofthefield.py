@@ -265,7 +265,7 @@ class Papers(tk.Canvas):
             if journal == self.prb_papers:
                 abstract = paper_page.find_all('p')[0].text
             if journal == self.nat_papers:
-                pass
+                abstract = paper_page.find_all('p')[4].text
             if journal == self.arx_papers:
                 pass
             journal[paper]['abstract'] = abstract
