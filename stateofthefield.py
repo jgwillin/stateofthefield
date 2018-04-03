@@ -28,7 +28,7 @@ button_color = 'gray90'
 abstract_bg = 'white'
 hover_color = 'gray90'
 title_bg = 'gray92'
-selection_bg = 'red4'
+selection_bg = 'gray80'
 selection_color = 'red4'
 
 title_font = ('Times New Roman', 12)
@@ -301,13 +301,13 @@ class Papers(tk.Canvas):
                 self.labels[past_sel].config(bg=title_bg)
                 self.labels[past_sel+'-authors'].config(bg=papers_bg)
                 self.labels[past_sel+'-pubinfo'].config(bg=papers_bg)
-                self.labels[past_sel+'-box'].config(bg=papers_bg, bd=0)
+                self.labels[past_sel+'-box'].config(bg=papers_bg, relief='flat', bd=0)
             self.selection = self.hovering
             title = self.selection['title']
-#            self.labels[title].config(bg=selection_bg)
-#            self.labels[title+'-authors'].config(r)
-#            self.labels[title+'-pubinfo'].config(bg=selection_bg)
-            self.labels[title+'-box'].config(relief='ridge', bd=5)
+            self.labels[title].config(bg=selection_bg)
+            self.labels[title+'-authors'].config(bg=selection_bg)
+            self.labels[title+'-pubinfo'].config(bg=selection_bg)
+            self.labels[title+'-box'].config(bg=selection_bg, relief='ridge', bd=5)
         elif self.hovering != {} and self.hovering == self.selection:
             title = self.selection['title']
             self.labels[title].config(bg=title_bg)
