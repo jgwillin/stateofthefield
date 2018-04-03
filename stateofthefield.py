@@ -26,6 +26,10 @@ bordercolor = 'red4'
 filters_bg = 'gray70'
 button_color = 'gray90'
 abstract_bg = 'white'
+hover_color = 'gray90'
+title_bg = 'gray92'
+selection_bg = 'red4'
+selection_color = 'red4'
 
 title_font = ('Times New Roman', 12)
 authors_font = ('Ariel', 8)
@@ -44,33 +48,37 @@ class Main(tk.Tk):
         self.geometry('1800x800')
         print('\n___State of the Field___\n')
         
-        container = tk.Frame(self, highlightbackground=bordercolor, highlightcolor=bordercolor, highlightthickness=12)
+        container = tk.Frame(self, highlightbackground=bordercolor, highlightcolor=bordercolor, highlightthickness=12, bg=papers_bg)
         container.grid(row=0, column=0, sticky='nsew')
 
-        
         self.elements = {}
+        
         self.elements[Filters] = Filters(self)
         self.elements[Filters].grid(row=0, column=1, sticky='nsew')
         self.grid_columnconfigure(0, weight=9, uniform='group1')
         self.grid_columnconfigure(1, weight=4, uniform='group1')
         self.grid_rowconfigure(0, weight=1)
+        
         self.elements[Papers] = Papers(container, self)
         self.elements[Papers].pack(side='left', fill='both', expand=True)
+        
         self.title('State of the Field')
-#        self.iconbitmap(r'C:\Users\George Willingham\Documents\Code\Personal Projects\State of the Field\app-icon2.ico')
+        self.iconbitmap(r'C:\Users\George Willingham\Documents\Code\Personal Projects\State of the Field\app-icon2.ico')
             
 
 class Papers(tk.Canvas):
     def __init__(self, parent, root):
         tk.Canvas.__init__(self, parent, bg=papers_bg)
         self.root = root
+        self.hovering = {}
+        self.selection = {}
 
         self.scrollbar = tk.Scrollbar(self, command=self.yview)
         self.scrollbar.pack(side='left', fill='y')
         root.bind_all('<MouseWheel>', self._on_mouse_wheel)
-
         self.configure(yscrollcommand = self.scrollbar.set)
         self.bind('<Configure>', self._on_configure)
+        
         
         self.frame = tk.Frame(self, bg=papers_bg)
         self.create_window((0,0), window=self.frame, anchor='nw')
@@ -78,6 +86,8 @@ class Papers(tk.Canvas):
         self._get_PhysRevB_papers()
         self._get_Nature_papers()
         self._get_arXiv_papers()
+        
+        root.bind('<Button-1>', self._select_paper)
         
         self.row = 0
         self.labels = {}
@@ -230,6 +240,7 @@ class Papers(tk.Canvas):
         self.row += 1
         link_callbacks = {}
         abstract_callbacks = {}
+        hover_callbacks = {}
         for paper in papers.keys():
             title = papers[paper]['title']
             authors = papers[paper]['authors']
@@ -241,19 +252,71 @@ class Papers(tk.Canvas):
             def abstract_callback(papers=papers, paper=paper):
                 self._get_abstract(papers, paper)
             abstract_callbacks[title] = abstract_callback
-            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, cursor='hand2', wraplength=1200, justify='left')
+            self.labels[title+'-box'] = tk.Label(self.frame, bg=papers_bg, width=200)
+            self.labels[title+'-box'].grid(row=self.row, column=1, rowspan=3, columnspan=3, pady=(0, 5), sticky='nsew')
+            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, bg=title_bg, cursor='hand2', wraplength=1200, justify='left')
             self.labels[title].bind('<Button-1>', link_callbacks[title])
-            self.labels[title].grid(row=self.row, column=1, padx=40, sticky='w')
+            self.labels[title].grid(row=self.row, column=1, padx=40, pady=(5, 0), sticky='w')
             self.row += 1
-            self.labels[title+'-authors'] = tk.Label(self.frame, text=authors, font=authors_font, bg=papers_bg, wraplength=1200, justify='left')
+            self.labels[title+'-authors'] = tk.Label(self.frame, text=authors, font=authors_font, bg=papers_bg, wraplength=1200, justify='left', state='normal', activebackground='red4')
             self.labels[title+'-authors'].grid(row=self.row, column=1, padx=100, sticky='w')
             self.row +=1
             self.labels[title+'-pubinfo'] = tk.Label(self.frame, text=pubinfo+'\n', font=authors_font, bg=papers_bg, wraplength=1200, justify='left')
             self.labels[title+'-pubinfo'].grid(row=self.row, column=1, padx=100, sticky='w')
             self.labels[title+'-get_abstract'] = tk.Button(self.frame, text='Abstract', command=abstract_callbacks[title], bg=button_color, font=authors_font)
-            self.labels[title+'-get_abstract'].grid(row=self.row, column=1, padx=(200, 0), pady=(0, 35))
+            self.labels[title+'-get_abstract'].grid(row=self.row, column=1, padx=(200, 0), pady=(0, 35), sticky='n')
             self.row += 1
+            def on_hover(event, papers=papers, paper=paper):
+                self.hovering = papers[paper]
+                if self.hovering != self.selection:
+                    title = papers[paper]['title']
+                    self.labels[title].config(bg=hover_color)
+                    self.labels[title+'-authors'].config(bg=hover_color)
+                    self.labels[title+'-pubinfo'].config(bg=hover_color)
+                    self.labels[title+'-box'].config(bg=hover_color)
+            hover_callbacks[title+'-enter'] = on_hover
+            def on_leave(event, papers=papers, paper=paper):
+                self.hovering = {}
+                if papers[paper] != self.selection:
+                    title= papers[paper]['title']
+                    self.labels[title].config(bg=title_bg)
+                    self.labels[title+'-authors'].config(bg=papers_bg)
+                    self.labels[title+'-pubinfo'].config(bg=papers_bg)
+                    self.labels[title+'-box'].config(bg=papers_bg)
+            hover_callbacks[title+'-leave'] = on_leave
+            self.labels[title].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title+'-authors'].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title+'-pubinfo'].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title+'-box'].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title].bind('<Leave>', hover_callbacks[title+'-leave'])
+            self.labels[title+'-authors'].bind('<Leave>', hover_callbacks[title+'-leave'])
+            self.labels[title+'-pubinfo'].bind('<Leave>', hover_callbacks[title+'-leave'])
+            self.labels[title+'-box'].bind('<Leave>', hover_callbacks[title+'-leave'])
     
+    
+    def _select_paper(self, event):
+        if self.hovering != {} and self.hovering != self.selection:
+            if self.selection != {}:
+                past_sel = self.selection['title']
+                self.labels[past_sel].config(bg=title_bg)
+                self.labels[past_sel+'-authors'].config(bg=papers_bg)
+                self.labels[past_sel+'-pubinfo'].config(bg=papers_bg)
+                self.labels[past_sel+'-box'].config(bg=papers_bg, bd=0)
+            self.selection = self.hovering
+            title = self.selection['title']
+#            self.labels[title].config(bg=selection_bg)
+#            self.labels[title+'-authors'].config(r)
+#            self.labels[title+'-pubinfo'].config(bg=selection_bg)
+            self.labels[title+'-box'].config(relief='ridge', bd=5)
+        elif self.hovering != {} and self.hovering == self.selection:
+            title = self.selection['title']
+            self.labels[title].config(bg=title_bg)
+            self.labels[title+'-authors'].config(bg=hover_color)
+            self.labels[title+'-pubinfo'].config(bg=hover_color)
+            self.labels[title+'-box'].config(bg=hover_color, relief='flat', bd=0)
+            self.selection = {}
+            
+        
     
     def _get_abstract(self, journal, paper):
         self.update_idletasks()
@@ -298,6 +361,7 @@ class Papers(tk.Canvas):
         
     def _on_mouse_wheel(self, event):
         self.yview_scroll(int(-1*(event.delta/120)), 'units')
+
         
 
         
@@ -396,9 +460,9 @@ class Filters(tk.Frame):
     
     def _count_results(self):
         if self._searched:
-            num = len(self.prb_hits) + len(self.nat_hits) + len(self.arx_hits)
+            num = len(self.prb_hits)*self.prb_toggle.get() + len(self.nat_hits)*self.nat_toggle.get() + len(self.arx_hits)*self.arx_toggle.get()
         else:
-            num = 'Search to see number of'
+            num = 'Search to filter'
         self.num_results.set(f'{num} results')
 
         
