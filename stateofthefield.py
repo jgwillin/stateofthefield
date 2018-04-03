@@ -57,7 +57,7 @@ class Main(tk.Tk):
         self.elements[Filters].grid(row=0, column=1, sticky='nsew')
         self.grid_columnconfigure(0, weight=8, uniform='group1')
         self.grid_columnconfigure(1, weight=5, uniform='group1')
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1, uniform='group1')
         
         self.elements[Papers] = Papers(container, self)
         self.elements[Papers].pack(side='left', fill='both', expand=True)
@@ -302,11 +302,14 @@ class Papers(tk.Canvas):
     def _select_paper(self, event):
         if self.hovering != {} and self.hovering != self.selection:
             if self.selection != {}:
-                past_sel = self.selection['title']
-                self.labels[past_sel].config(bg=title_bg)
-                self.labels[past_sel+'-authors'].config(bg=papers_bg)
-                self.labels[past_sel+'-pubinfo'].config(bg=papers_bg)
-                self.labels[past_sel+'-box'].config(bg=papers_bg, relief='flat', bd=0)
+                try:
+                    past_sel = self.selection['title']
+                    self.labels[past_sel].config(bg=title_bg)
+                    self.labels[past_sel+'-authors'].config(bg=papers_bg)
+                    self.labels[past_sel+'-pubinfo'].config(bg=papers_bg)
+                    self.labels[past_sel+'-box'].config(bg=papers_bg, relief='flat', bd=0)
+                except:
+                    None
             self.selection = self.hovering
             title = self.selection['title']
             self.labels[title].config(bg=selection_bg)
@@ -316,6 +319,7 @@ class Papers(tk.Canvas):
             self.root.elements[Filters].selected_paper_title.set(self.selection['title'])
             self.root.elements[Filters].selected_paper_authors.set(self.selection['authors'])
             self.root.elements[Filters].selected_paper_pubinfo.set(self.selection['pubinfo'])
+            self.root.elements[Filters].save_button.grid(row=self.root.elements[Filters].row, column=0,columnspan=3, padx=(85, 0), pady=(0, 100), sticky='w')
             
         elif self.hovering != {} and self.hovering == self.selection:
             title = self.selection['title']
@@ -324,6 +328,7 @@ class Papers(tk.Canvas):
             self.labels[title+'-pubinfo'].config(bg=hover_color)
             self.labels[title+'-box'].config(bg=hover_color, relief='flat', bd=0)
             self.selection = {}
+            self.root.elements[Filters].save_button.grid_forget()
             self.root.elements[Filters].selected_paper_title.set('')
             self.root.elements[Filters].selected_paper_authors.set('')
             self.root.elements[Filters].selected_paper_pubinfo.set('')
@@ -451,12 +456,12 @@ class Filters(tk.Frame):
         selected_paper_pubinfo_label = tk.Label(self, textvariable=self.selected_paper_pubinfo, font=authors_font, bg=filters_bg, wraplength=800, justify='left')
         selected_paper_pubinfo_label.grid(row=row, column=0,columnspan=3, padx=(85, 0), sticky='w')
         row += 1
-        save_paper_button = tk.Button(self, text='Save this paper', command=self.save, font=authors_font, bg=button_color)
-        save_paper_button.grid(row=row, column=0,columnspan=3, padx=(85, 0), sticky='w')
+        self.row = row
+        self.save_button = tk.Button(self, text='Save this paper', command=self._save, font=authors_font, bg=button_color)
         row += 1
         
-
         root.bind('<Return>', self._search)
+        
     
         
     def _search(self, event=1):
@@ -510,10 +515,10 @@ class Filters(tk.Frame):
         self.num_results.set(f'{num} results')
         
     
-    def save(self):
+    def _save(self):
         pass
+    
 
-        
         
         
 
