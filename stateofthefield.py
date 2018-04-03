@@ -55,8 +55,8 @@ class Main(tk.Tk):
         
         self.elements[Filters] = Filters(self)
         self.elements[Filters].grid(row=0, column=1, sticky='nsew')
-        self.grid_columnconfigure(0, weight=9, uniform='group1')
-        self.grid_columnconfigure(1, weight=4, uniform='group1')
+        self.grid_columnconfigure(0, weight=8, uniform='group1')
+        self.grid_columnconfigure(1, weight=5, uniform='group1')
         self.grid_rowconfigure(0, weight=1)
         
         self.elements[Papers] = Papers(container, self)
@@ -266,6 +266,11 @@ class Papers(tk.Canvas):
             self.labels[title+'-get_abstract'] = tk.Button(self.frame, text='Abstract', command=abstract_callbacks[title], bg=button_color, font=authors_font)
             self.labels[title+'-get_abstract'].grid(row=self.row, column=1, padx=(200, 0), pady=(0, 35), sticky='n')
             self.row += 1
+            if self.selection == papers[paper]:
+                self.labels[title].config(bg=selection_bg)
+                self.labels[title+'-authors'].config(bg=selection_bg)
+                self.labels[title+'-pubinfo'].config(bg=selection_bg)
+                self.labels[title+'-box'].config(bg=selection_bg, relief='ridge', bd=5)
             def on_hover(event, papers=papers, paper=paper):
                 self.hovering = papers[paper]
                 if self.hovering != self.selection:
@@ -308,6 +313,10 @@ class Papers(tk.Canvas):
             self.labels[title+'-authors'].config(bg=selection_bg)
             self.labels[title+'-pubinfo'].config(bg=selection_bg)
             self.labels[title+'-box'].config(bg=selection_bg, relief='ridge', bd=5)
+            self.root.elements[Filters].selected_paper_title.set(self.selection['title'])
+            self.root.elements[Filters].selected_paper_authors.set(self.selection['authors'])
+            self.root.elements[Filters].selected_paper_pubinfo.set(self.selection['pubinfo'])
+            
         elif self.hovering != {} and self.hovering == self.selection:
             title = self.selection['title']
             self.labels[title].config(bg=title_bg)
@@ -315,6 +324,9 @@ class Papers(tk.Canvas):
             self.labels[title+'-pubinfo'].config(bg=hover_color)
             self.labels[title+'-box'].config(bg=hover_color, relief='flat', bd=0)
             self.selection = {}
+            self.root.elements[Filters].selected_paper_title.set('')
+            self.root.elements[Filters].selected_paper_authors.set('')
+            self.root.elements[Filters].selected_paper_pubinfo.set('')
             
         
     
@@ -361,6 +373,8 @@ class Papers(tk.Canvas):
         
     def _on_mouse_wheel(self, event):
         self.yview_scroll(int(-1*(event.delta/120)), 'units')
+    
+    
 
         
 
@@ -377,10 +391,10 @@ class Filters(tk.Frame):
         
         row = 0
         self.search_str = tk.StringVar()
-        search_box = tk.Entry(self, textvariable=self.search_str, width=30)
+        search_box = tk.Entry(self, textvariable=self.search_str, width=45)
         search_box.grid(row=row, column=0, padx=3, pady=20, sticky='w')
         search_button = tk.Button(self, text='Search', command=self._search)
-        search_button.grid(row=row, column=1, sticky='w')
+        search_button.grid(row=row, column=1, columnspan=3, sticky='w')
         
         row += 1
         self.num_results = tk.StringVar()
@@ -389,29 +403,59 @@ class Filters(tk.Frame):
         results_label.grid(row=row, column=0)
         
         row += 1
-        format_line = tk.Label(self, text='_'*40, bg=filters_bg)
-        format_line.grid(row=row, column=0)
+        format_line = tk.Label(self, text='_'*115, bg=filters_bg)
+        format_line.grid(row=row, column=0, columnspan=3, sticky='w')
         
         row += 1
-        journal_filter_label = tk.Label(self, text='Journals:', bg=filters_bg, font=filters_font)
-        journal_filter_label.grid(row=row, column=0, padx=25, pady=(15, 0), sticky='w')
-        
+        journal_filter_label = tk.Label(self, text='Journals', bg=filters_bg, font=filters_font)
+        journal_filter_label.grid(row=row, column=0, padx=10, pady=15, sticky='e')
         
         row += 1
         self.prb_toggle = tk.IntVar(root, value=1)
         prb_toggle_button = tk.Checkbutton(self, text='Physical Review B', variable=self.prb_toggle, font=filters_list_font, bg=filters_bg)
-        prb_toggle_button.grid(row=row, column=0, padx=25, sticky='w')
+        prb_toggle_button.grid(row=row, column=0, padx=(100, 0), sticky='w')
+        
+        new_journal_toggle_button = tk.Checkbutton(self, text='Another Journal', font=filters_list_font, bg=filters_bg)
+        new_journal_toggle_button.grid(row=row, column=1, padx=(10, 250), sticky='w')
         
         row += 1
         self.nat_toggle = tk.IntVar(root, value=1)
         nat_toggle_button = tk.Checkbutton(self, text='Nature', variable=self.nat_toggle, font=filters_list_font, bg=filters_bg)
-        nat_toggle_button.grid(row=row, column=0, padx=25, sticky='w')
+        nat_toggle_button.grid(row=row, column=0, padx=(100, 0), sticky='w')
+
+        new_journal_toggle_button = tk.Checkbutton(self, text='Another Journal', font=filters_list_font, bg=filters_bg)
+        new_journal_toggle_button.grid(row=row, column=1, padx=(10, 250), sticky='w')
         
         row += 1
         self.arx_toggle = tk.IntVar(root, value=1)
         arx_toggle_button = tk.Checkbutton(self, text='arXiv', variable=self.arx_toggle, font=filters_list_font, bg=filters_bg)
-        arx_toggle_button.grid(row=row, column=0, padx=25, sticky='w')
+        arx_toggle_button.grid(row=row, column=0, padx=(100, 0), sticky='w')
+
+        new_journal_toggle_button = tk.Checkbutton(self, text='Another Journal', font=filters_list_font, bg=filters_bg)
+        new_journal_toggle_button.grid(row=row, column=1, padx=(10, 250), sticky='w')
+
+        row += 1
+        format_line = tk.Label(self, text='_'*115, bg=filters_bg)
+        format_line.grid(row=row, column=0, columnspan=3, sticky='w')
         
+        row += 1
+        self.selected_paper_title = tk.StringVar(root, '')
+        selected_paper_title_label = tk.Label(self, textvariable=self.selected_paper_title, font=title_font, bg=filters_bg, wraplength=850, justify='left')
+        selected_paper_title_label.grid(row=row, column=0, columnspan=2, padx=(25, 0), pady=(45, 0), sticky='w')
+        row += 1
+        self.selected_paper_authors = tk.StringVar(root, '')
+        selected_paper_authors_label = tk.Label(self, textvariable=self.selected_paper_authors, font=authors_font, bg=filters_bg, wraplength=800, justify='left')
+        selected_paper_authors_label.grid(row=row, column=0, columnspan=3, padx=(85, 0), pady=(15, 0), sticky='w')
+        row += 1
+        self.selected_paper_pubinfo = tk.StringVar(root, '')
+        selected_paper_pubinfo_label = tk.Label(self, textvariable=self.selected_paper_pubinfo, font=authors_font, bg=filters_bg, wraplength=800, justify='left')
+        selected_paper_pubinfo_label.grid(row=row, column=0,columnspan=3, padx=(85, 0), sticky='w')
+        row += 1
+        save_paper_button = tk.Button(self, text='Save this paper', command=self.save, font=authors_font, bg=button_color)
+        save_paper_button.grid(row=row, column=0,columnspan=3, padx=(85, 0), sticky='w')
+        row += 1
+        
+
         root.bind('<Return>', self._search)
     
         
@@ -464,6 +508,10 @@ class Filters(tk.Frame):
         else:
             num = 'Search to filter'
         self.num_results.set(f'{num} results')
+        
+    
+    def save(self):
+        pass
 
         
         
