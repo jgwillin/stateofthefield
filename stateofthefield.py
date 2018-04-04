@@ -19,6 +19,7 @@ import tkinter as tk
 import urllib.request as url
 from bs4 import BeautifulSoup
 import webbrowser
+import csv
 
 
 papers_bg = 'white'
@@ -39,7 +40,8 @@ filters_list_font = ('Times New Roman', 12)
 
 page_depth = 1 # how many pages of each Journal should be searched through
 
-
+database_path = r'C:\Users\George Willingham\Repositories\stateofthefield\saved_papers_database.csv'
+    
 
 
 class Main(tk.Tk):
@@ -390,6 +392,7 @@ class Filters(tk.Frame):
         tk.Frame.__init__(self, root, bg=filters_bg)
         self.root = root
         self._searched = False
+        root.bind('<Return>', self._search)
         self.prb_hits = {}
         self.nat_hits = {}
         self.arx_hits = {}
@@ -459,10 +462,9 @@ class Filters(tk.Frame):
         self.row = row
         self.save_button = tk.Button(self, text='Save this paper', command=self._save, font=authors_font, bg=button_color)
         row += 1
+
         
-        root.bind('<Return>', self._search)
         
-    
         
     def _search(self, event=1):
         self._searched = True
@@ -516,12 +518,20 @@ class Filters(tk.Frame):
         
     
     def _save(self):
-        pass
+        with open(database_path, 'a', newline='') as db:
+            w = csv.writer(db, dialect='excel')
+            paper = self.root.elements[Papers].selection
+            row = []
+            for key in paper.keys():
+                row.append(paper[key].encode('utf-8'))
+            w.writerow(row)
+            db.close()
+    
+            
     
 
         
-        
-
+    
 if __name__ == '__main__':
     app = Main()
     app.mainloop()
