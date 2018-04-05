@@ -32,13 +32,15 @@ title_bg = 'gray92'
 selection_bg = 'gray80'
 selection_color = 'red4'
 
+borderthickness = 12
+
 title_font = ('Times New Roman', 12)
 authors_font = ('Ariel', 8)
 journals_font = ('Times New Roman', 18, 'underline')
 filters_font = ('Times New Roman', 15, 'underline')
 filters_list_font = ('Times New Roman', 12)
 
-page_depth = 1 # how many pages of each Journal should be searched through
+page_depth = 0 # how many pages of each Journal should be searched through
 
 database_path = r'C:\Users\George Willingham\Repositories\stateofthefield\saved_papers_database.csv'
     
@@ -50,7 +52,7 @@ class Main(tk.Tk):
         self.geometry('1800x800')
         print('\n___State of the Field___\n')
         
-        container = tk.Frame(self, highlightbackground=bordercolor, highlightcolor=bordercolor, highlightthickness=12, bg=papers_bg)
+        container = tk.Frame(self, highlightbackground=bordercolor, highlightcolor=bordercolor, highlightthickness=borderthickness, bg=papers_bg)
         container.grid(row=0, column=0, sticky='nsew')
 
         self.elements = {}
@@ -64,6 +66,7 @@ class Main(tk.Tk):
         self.elements[Papers] = Papers(container, self)
         self.elements[Papers].pack(side='left', fill='both', expand=True)
         
+        self.scroller = 'papers'
         self.title('State of the Field')
         self.iconbitmap(r'C:\Users\George Willingham\Documents\Code\Personal Projects\State of the Field\app-icon2.ico')
             
@@ -78,6 +81,7 @@ class Papers(tk.Canvas):
         self.scrollbar = tk.Scrollbar(self, command=self.yview)
         self.scrollbar.pack(side='left', fill='y')
         root.bind_all('<MouseWheel>', self._on_mouse_wheel)
+        self.bind('<Enter>', self._scroll_papers)
         self.configure(yscrollcommand = self.scrollbar.set)
         self.bind('<Configure>', self._on_configure)
         
@@ -85,20 +89,27 @@ class Papers(tk.Canvas):
         self.frame = tk.Frame(self, bg=papers_bg)
         self.create_window((0,0), window=self.frame, anchor='nw')
         print('getting publications')
-        self._get_PhysRevB_papers()
-        self._get_Nature_papers()
-        self._get_arXiv_papers()
-        
-        root.bind('<Button-1>', self._select_paper)
-        
-        self.row = 0
-        self.labels = {}
-        print('displaying publications')
-        self.show_papers(self.prb_papers)
-        self.show_papers(self.nat_papers)
-        self.show_papers(self.arx_papers)
-        self.scrollbar.tkraise()
-        print('\nDONE')
+        try:
+            self._get_PhysRevB_papers()
+            self._get_Nature_papers()
+            self._get_arXiv_papers()
+            isConnected = True
+        except:
+            print('ERROR: Could not connect to host')
+            message = tk.Label(self, text='\n\nNo Internet Connection', bg=papers_bg)
+            message.pack()
+            isConnected = False
+
+        if isConnected:
+            root.bind('<Button-1>', self._select_paper)
+            self.row = 0
+            self.labels = {}
+            print('displaying publications')
+            self.show_papers(self.prb_papers)
+            self.show_papers(self.nat_papers)
+            self.show_papers(self.arx_papers)
+            self.scrollbar.tkraise()
+            print('\nDONE')
     
     
     def _get_PhysRevB_papers(self):
@@ -376,12 +387,17 @@ class Papers(tk.Canvas):
         frame_height = self.frame.winfo_height()
         self.configure(height=frame_height)
         self.configure(scrollregion=self.bbox('all'))
+    
+    
+    def _scroll_papers(self, event):
+        self.root.scroller = 'papers'
 
         
     def _on_mouse_wheel(self, event):
-        self.yview_scroll(int(-1*(event.delta/120)), 'units')
-    
-    
+        if self.root.scroller == 'papers':
+            self.yview_scroll(int(-1*(event.delta/120)), 'units')
+        if self.root.scroller == 'db_handler':
+            self.root.elements[Filters].db_handler.yview_scroll(int(-1*(event.delta/120)), 'units')
 
         
 
@@ -462,7 +478,9 @@ class Filters(tk.Frame):
         self.row = row
         self.save_button = tk.Button(self, text='Save this paper', command=self._save, font=authors_font, bg=button_color)
         row += 1
-
+        
+        self.db_handler = Database_Handler(self, self.root)
+        self.db_handler.place(relx=0.0, rely=0.65, relwidth=1.0, relheight=0.34)
         
         
         
@@ -526,11 +544,64 @@ class Filters(tk.Frame):
                 row.append(paper[key].encode('utf-8'))
             w.writerow(row)
             db.close()
-    
+        
+        self.db_handler.saved_papers[row[0]] = {
+                'title':row[0],
+                'authors':row[1],
+                'link':row[2],
+                'pubinfo':row[3],
+                'abstract':row[4]
+                }
             
     
-
+    
+    
+            
+class Database_Handler(tk.Canvas):
+    def __init__(self, parent, root):
+        tk.Canvas.__init__(self, parent, bg=papers_bg, relief='ridge', bd=5)
+        self.root = root
         
+        self.scrollbar = tk.Scrollbar(self, command=self.yview)
+        self.scrollbar.pack(side='left', fill='y')
+        self.configure(yscrollcommand = self.scrollbar.set)
+        self.bind('<Configure>', self._on_configure)
+        self.db_handler = tk.Frame(self, bg=papers_bg)
+        self.create_window((0,0), window=self.db_handler, anchor='nw')
+        self.bind('<Enter>', self._scroll_db_handler)
+        
+        self.saved_papers = {}
+        with open(database_path, 'r') as db:
+            rows = csv.reader(db, dialect='excel')
+            for row in rows:
+                if row[0] == 'title':
+                    pass
+                else:
+                    self.saved_papers[row[0]] = {
+                            'title':row[0],
+                            'authors':row[1],
+                            'link':row[2],
+                            'pubinfo':row[3],
+                            'abstract':row[4]
+                            }
+            
+        
+        
+
+    def _on_configure(self, event):
+        frame_height = self.db_handler.winfo_height()
+        self.configure(height=frame_height)
+        self.configure(scrollregion=self.bbox('all'))
+        self.update_idletasks()
+        frame_height = self.db_handler.winfo_height()
+        self.configure(height=frame_height)
+        self.configure(scrollregion=self.bbox('all'))
+    
+    
+    def _scroll_db_handler(self, event):
+        self.root.scroller = 'db_handler'    
+    
+    
     
 if __name__ == '__main__':
     app = Main()
