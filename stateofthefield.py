@@ -40,7 +40,7 @@ journals_font = ('Times New Roman', 18, 'underline')
 filters_font = ('Times New Roman', 15, 'underline')
 filters_list_font = ('Times New Roman', 12)
 
-page_depth = 0 # how many pages of each Journal should be searched through
+page_depth = 1 # how many pages of each Journal should be searched through
 
 database_path = r'C:\Users\George Willingham\Repositories\stateofthefield\saved_papers_database.csv'
     
@@ -105,9 +105,9 @@ class Papers(tk.Canvas):
             self.row = 0
             self.labels = {}
             print('displaying publications')
-            self.show_papers(self.prb_papers)
-            self.show_papers(self.nat_papers)
-            self.show_papers(self.arx_papers)
+            show_papers(self, self.prb_papers)
+            show_papers(self, self.nat_papers)
+            show_papers(self, self.arx_papers)
             self.scrollbar.tkraise()
             print('\nDONE')
     
@@ -235,13 +235,12 @@ class Papers(tk.Canvas):
                     }
         self.nat_papers = nat_papers
         self.nat_papers_label = tk.Label(self.frame, text='\tNature\n', font=journals_font, bg=papers_bg)
+    
 
-            
     def show_papers(self, papers):
         if papers == self.prb_papers or papers == self.root.elements[Filters].prb_hits:
             self.prb_papers_label.grid_forget()
-            self.prb_papers_label.grid(row=self.row, column=1, sticky='w')
-        
+            self.prb_papers_label.grid(row=self.row, column=1, sticky='w')    
         if papers == self.nat_papers or papers == self.root.elements[Filters].nat_hits:
             self.nat_papers_label.grid_forget()
             self.nat_papers_label.grid(row=self.row, column=1, sticky='w')
@@ -249,7 +248,7 @@ class Papers(tk.Canvas):
         if papers == self.arx_papers or papers == self.root.elements[Filters].arx_hits:
             self.arx_papers_label.grid_forget()
             self.arx_papers_label.grid(row=self.row, column=1, sticky='w') 
-
+                
         self.row += 1
         link_callbacks = {}
         abstract_callbacks = {}
@@ -310,8 +309,8 @@ class Papers(tk.Canvas):
             self.labels[title+'-authors'].bind('<Leave>', hover_callbacks[title+'-leave'])
             self.labels[title+'-pubinfo'].bind('<Leave>', hover_callbacks[title+'-leave'])
             self.labels[title+'-box'].bind('<Leave>', hover_callbacks[title+'-leave'])
-    
-    
+
+
     def _select_paper(self, event):
         if self.hovering != {} and self.hovering != self.selection:
             if self.selection != {}:
@@ -552,6 +551,13 @@ class Filters(tk.Frame):
                 'pubinfo':row[3],
                 'abstract':row[4]
                 }
+        
+        for key in self.db_handler.labels.keys():
+            self.db_handler.labels[key].destroy()
+        self.db_handler.labels = {}
+        self.db_handler.load_saved_papers()
+        self.db_handler.show_saved_papers(self.db_handler.saved_papers)
+        self.db_handler._on_configure(1)
             
     
     
@@ -559,17 +565,26 @@ class Filters(tk.Frame):
             
 class Database_Handler(tk.Canvas):
     def __init__(self, parent, root):
-        tk.Canvas.__init__(self, parent, bg=papers_bg, relief='ridge', bd=5)
+        tk.Canvas.__init__(self, parent, bg=papers_bg, relief='flat', bd=5)
         self.root = root
-        
+        self.row = 0
+        self.labels = {}
+        self.selection = {}
+        self.hovering = {}
         self.scrollbar = tk.Scrollbar(self, command=self.yview)
         self.scrollbar.pack(side='left', fill='y')
         self.configure(yscrollcommand = self.scrollbar.set)
         self.bind('<Configure>', self._on_configure)
-        self.db_handler = tk.Frame(self, bg=papers_bg)
-        self.create_window((0,0), window=self.db_handler, anchor='nw')
+        self.frame = tk.Frame(self, bg=papers_bg)
+        self.create_window((0,0), window=self.frame, anchor='nw')
         self.bind('<Enter>', self._scroll_db_handler)
         
+        self.load_saved_papers()
+        self.show_saved_papers(self.saved_papers)
+        self.scrollbar.tkraise()
+        
+        
+    def load_saved_papers(self):
         self.saved_papers = {}
         with open(database_path, 'r') as db:
             rows = csv.reader(db, dialect='excel')
@@ -577,6 +592,7 @@ class Database_Handler(tk.Canvas):
                 if row[0] == 'title':
                     pass
                 else:
+                    row = [cell.split("b'", 1)[1][:len(cell.split("b'",1)[1])-1] for cell in row]
                     self.saved_papers[row[0]] = {
                             'title':row[0],
                             'authors':row[1],
@@ -584,24 +600,67 @@ class Database_Handler(tk.Canvas):
                             'pubinfo':row[3],
                             'abstract':row[4]
                             }
-            
+    
+    def show_saved_papers(self, papers):
+        self.row += 1
+        link_callbacks = {}
+        hover_callbacks = {}
+        remove_callbacks = {}
+        for paper in papers.keys():
+            title = papers[paper]['title']
+            authors = papers[paper]['authors']
+            link = papers[paper]['link']
+            def link_callback(event, link=link):
+                webbrowser.open_new(link)
+            link_callbacks[title] = link_callback
+            self.labels[title+'-box'] = tk.Label(self.frame, bg=papers_bg, width=200)
+            self.labels[title+'-box'].grid(row=self.row, column=1, rowspan=3, columnspan=3, pady=(0, 5), sticky='nsew')
+            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, bg=title_bg, cursor='hand2', wraplength=900, justify='left')
+            self.labels[title].bind('<Button-1>', link_callbacks[title])
+            self.labels[title].grid(row=self.row, column=1, padx=40, pady=(5, 0), sticky='w')
+            self.row += 1
+            self.labels[title+'-authors'] = tk.Label(self.frame, text=authors, font=authors_font, bg=papers_bg, wraplength=800, justify='left', state='normal', activebackground='red4')
+            self.labels[title+'-authors'].grid(row=self.row, column=1, padx=100, sticky='w')
+            self.row += 1
+            def on_hover(event, papers=papers, paper=paper):
+                self.hovering = papers[paper]
+                title = papers[paper]['title']
+                self.labels[title].config(bg=hover_color)
+                self.labels[title+'-authors'].config(bg=hover_color)
+                self.labels[title+'-box'].config(bg=hover_color)
+            hover_callbacks[title+'-enter'] = on_hover
+            def on_leave(event, papers=papers, paper=paper):
+                self.hovering = {}
+                title= papers[paper]['title']
+                self.labels[title].config(bg=title_bg)
+                self.labels[title+'-authors'].config(bg=papers_bg)
+                self.labels[title+'-box'].config(bg=papers_bg)
+            hover_callbacks[title+'-leave'] = on_leave
+            self.labels[title].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title+'-authors'].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title+'-box'].bind('<Enter>', hover_callbacks[title+'-enter'])
+            self.labels[title].bind('<Leave>', hover_callbacks[title+'-leave'])
+            self.labels[title+'-authors'].bind('<Leave>', hover_callbacks[title+'-leave'])
+            self.labels[title+'-box'].bind('<Leave>', hover_callbacks[title+'-leave'])
         
         
 
     def _on_configure(self, event):
-        frame_height = self.db_handler.winfo_height()
+        frame_height = self.frame.winfo_height()
         self.configure(height=frame_height)
         self.configure(scrollregion=self.bbox('all'))
         self.update_idletasks()
-        frame_height = self.db_handler.winfo_height()
+        frame_height = self.frame.winfo_height()
         self.configure(height=frame_height)
         self.configure(scrollregion=self.bbox('all'))
+        self.scrollbar.tkraise()
     
     
     def _scroll_db_handler(self, event):
         self.root.scroller = 'db_handler'    
     
-    
+
+
     
 if __name__ == '__main__':
     app = Main()
