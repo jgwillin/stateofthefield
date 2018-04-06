@@ -40,7 +40,7 @@ journals_font = ('Times New Roman', 18, 'underline')
 filters_font = ('Times New Roman', 15, 'underline')
 filters_list_font = ('Times New Roman', 12)
 
-page_depth = 1 # how many pages of each Journal should be searched through
+page_depth = 2 # how many pages of each Journal should be searched through
 
 database_path = r'C:\Users\George Willingham\Repositories\stateofthefield\saved_papers_database.csv'
     
@@ -105,9 +105,9 @@ class Papers(tk.Canvas):
             self.row = 0
             self.labels = {}
             print('displaying publications')
-            show_papers(self, self.prb_papers)
-            show_papers(self, self.nat_papers)
-            show_papers(self, self.arx_papers)
+            self.show_papers(self.prb_papers)
+            self.show_papers(self.nat_papers)
+            self.show_papers(self.arx_papers)
             self.scrollbar.tkraise()
             print('\nDONE')
     
@@ -561,11 +561,12 @@ class Filters(tk.Frame):
             
     
     
-    
+
+
             
 class Database_Handler(tk.Canvas):
     def __init__(self, parent, root):
-        tk.Canvas.__init__(self, parent, bg=papers_bg, relief='flat', bd=5)
+        tk.Canvas.__init__(self, parent, bg=papers_bg, relief='ridge', bd=5)
         self.root = root
         self.row = 0
         self.labels = {}
@@ -589,17 +590,14 @@ class Database_Handler(tk.Canvas):
         with open(database_path, 'r') as db:
             rows = csv.reader(db, dialect='excel')
             for row in rows:
-                if row[0] == 'title':
-                    pass
-                else:
-                    row = [cell.split("b'", 1)[1][:len(cell.split("b'",1)[1])-1] for cell in row]
-                    self.saved_papers[row[0]] = {
-                            'title':row[0],
-                            'authors':row[1],
-                            'link':row[2],
-                            'pubinfo':row[3],
-                            'abstract':row[4]
-                            }
+                row = [cell.split("b'", 1)[1][:len(cell.split("b'",1)[1])-1] for cell in row]
+                self.saved_papers[row[0]] = {
+                        'title':row[0],
+                        'authors':row[1],
+                        'link':row[2],
+                        'pubinfo':row[3],
+                        'abstract':row[4]
+                        }
     
     def show_saved_papers(self, papers):
         self.row += 1
@@ -615,12 +613,24 @@ class Database_Handler(tk.Canvas):
             link_callbacks[title] = link_callback
             self.labels[title+'-box'] = tk.Label(self.frame, bg=papers_bg, width=200)
             self.labels[title+'-box'].grid(row=self.row, column=1, rowspan=3, columnspan=3, pady=(0, 5), sticky='nsew')
-            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, bg=title_bg, cursor='hand2', wraplength=900, justify='left')
+            self.labels[title] = tk.Label(self.frame, text=title, font=title_font, bg=title_bg, cursor='hand2', wraplength=850, justify='left')
             self.labels[title].bind('<Button-1>', link_callbacks[title])
             self.labels[title].grid(row=self.row, column=1, padx=40, pady=(5, 0), sticky='w')
             self.row += 1
             self.labels[title+'-authors'] = tk.Label(self.frame, text=authors, font=authors_font, bg=papers_bg, wraplength=800, justify='left', state='normal', activebackground='red4')
             self.labels[title+'-authors'].grid(row=self.row, column=1, padx=100, sticky='w')
+            def remove_paper(papers=papers, paper=paper):
+                title = papers[paper]['title']
+                self.labels[title+'-box'].destroy()
+                self.labels[title].destroy()
+                self.labels[title+'-authors'].destroy()
+                self.labels[title+'-remove'].destroy()
+                self.saved_papers = {k:self.saved_papers[k] for k in self.saved_papers.keys() if k != title}
+                self._remove_from_database(papers[paper])
+                print('working')
+            remove_callbacks[title] = remove_paper
+            self.labels[title+'-remove'] = tk.Button(self.frame, text='Remove', font=authors_font, bg=button_color, command=remove_callbacks[title])
+            self.labels[title+'-remove'].grid(row=self.row-1, column=1, padx=900, sticky='w')
             self.row += 1
             def on_hover(event, papers=papers, paper=paper):
                 self.hovering = papers[paper]
@@ -642,6 +652,20 @@ class Database_Handler(tk.Canvas):
             self.labels[title].bind('<Leave>', hover_callbacks[title+'-leave'])
             self.labels[title+'-authors'].bind('<Leave>', hover_callbacks[title+'-leave'])
             self.labels[title+'-box'].bind('<Leave>', hover_callbacks[title+'-leave'])
+    
+    
+    def _remove_from_database(self, paper):
+        with open(database_path, 'w+', newline='') as db:
+            w = csv.writer(db, dialect='excel')
+            for key in self.saved_papers.keys():
+                pap = self.saved_papers[key]
+                if pap == paper:
+                    pass
+                else:
+                    row = []
+                    for key in paper.keys():
+                        row.append(pap[key].encode('utf-8'))
+                    w.writerow(row)
         
         
 
