@@ -40,7 +40,7 @@ journals_font = ('Times New Roman', 18, 'underline')
 filters_font = ('Times New Roman', 15, 'underline')
 filters_list_font = ('Times New Roman', 12)
 
-page_depth = 2 # how many pages of each Journal should be searched through
+page_depth = 4 # how many pages of each Journal should be searched through
 
 database_path = r'C:\Users\George Willingham\Repositories\stateofthefield\saved_papers_database.csv'
     
@@ -68,7 +68,6 @@ class Main(tk.Tk):
         
         self.scroller = 'papers'
         self.title('State of the Field')
-        self.iconbitmap(r'C:\Users\George Willingham\Documents\Code\Personal Projects\State of the Field\app-icon2.ico')
             
 
 class Papers(tk.Canvas):
@@ -477,6 +476,8 @@ class Filters(tk.Frame):
         self.row = row
         self.save_button = tk.Button(self, text='Save this paper', command=self._save, font=authors_font, bg=button_color)
         row += 1
+        saved_papers_label = tk.Label(self, text='My Library', font=filters_font, bg=filters_bg)
+        saved_papers_label.place(relx=0.0, rely=0.62)
         
         self.db_handler = Database_Handler(self, self.root)
         self.db_handler.place(relx=0.0, rely=0.65, relwidth=1.0, relheight=0.34)
