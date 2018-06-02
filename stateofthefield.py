@@ -40,7 +40,7 @@ journals_font = ('Times New Roman', 18, 'underline')
 filters_font = ('Times New Roman', 15, 'underline')
 filters_list_font = ('Times New Roman', 12)
 
-page_depth = 4 # how many pages of each Journal should be searched through
+page_depth = 1 # how many pages of each journal should be searched through
 
 database_path = r'C:\Users\George Willingham\Repositories\stateofthefield\saved_papers_database.csv'
     
@@ -89,8 +89,11 @@ class Papers(tk.Canvas):
         self.create_window((0,0), window=self.frame, anchor='nw')
         print('getting publications')
         try:
-            self._get_PhysRevB_papers()
-            self._get_Nature_papers()
+            self.prb_pages_read = 0
+            self.nat_pages_read = 0
+            self._get_PhysRevB_papers(num_pages=page_depth)
+            self._get_Nature_papers(num_pages=page_depth)
+            self.nat_papers_read = page_depth
             self._get_arXiv_papers()
             isConnected = True
         except:
@@ -111,13 +114,13 @@ class Papers(tk.Canvas):
             print('\nDONE')
     
     
-    def _get_PhysRevB_papers(self):
+    def _get_PhysRevB_papers(self, start_page=1, num_pages=1):
         print('opening Physical Review B . . .')
         prb_titles = []
         prb_authors = []
         prb_links = []
         prb_pubinfo = []
-        for page in [i for i in range(1, page_depth+1)]:
+        for page in range(start_page, start_page+num_pages):
             print(f'\tparsing page {page} . . .')
             prb_html = url.urlopen(f'https://journals.aps.org/prb/recent?page={page}')
             self.prb = BeautifulSoup(prb_html, 'lxml')
@@ -141,7 +144,11 @@ class Papers(tk.Canvas):
                         'abstract':''
                         }
                 inx += 1
-        self.prb_papers = prb_papers
+        if start_page == 1:
+            self.prb_papers = prb_papers
+        else:
+            self.prb_papers.update(prb_papers)
+        self.prb_pages_read += num_pages
         self.prb_papers_label = tk.Label(self.frame, text='\tPhysical Review B\n', font=journals_font, bg=papers_bg)
         
         
@@ -181,13 +188,13 @@ class Papers(tk.Canvas):
         self.arx_papers_label = tk.Label(self.frame, text='\tarXiv\n', font=journals_font, bg=papers_bg)
         
         
-    def _get_Nature_papers(self):
+    def _get_Nature_papers(self, start_page=1, num_pages=1):
         print('opening Nature . . .')
         nat_titles = []
         nat_authors = []
         nat_links = []
         nat_pubinfo = []
-        for page_num in [i for i in range(1, page_depth+1)]:
+        for page_num in range(start_page, start_page+num_pages):
             print(f'\tparsing page {page_num} . . .')
             nat_html = url.urlopen(f'https://www.nature.com/search?article_type=protocols%2Cresearch%2Creviews&subject=condensed-matter-physics&page={page_num}')
             nat = BeautifulSoup(nat_html, 'lxml')
@@ -232,7 +239,11 @@ class Papers(tk.Canvas):
                     'pubinfo':pubinfo,
                     'abstract':''
                     }
-        self.nat_papers = nat_papers
+        if start_page == 1:
+            self.nat_papers = nat_papers
+        else:
+            self.nat_papers.update(nat_papers)
+        self.nat_pages_read += 1
         self.nat_papers_label = tk.Label(self.frame, text='\tNature\n', font=journals_font, bg=papers_bg)
     
 
@@ -309,6 +320,7 @@ class Papers(tk.Canvas):
             self.labels[title+'-pubinfo'].bind('<Leave>', hover_callbacks[title+'-leave'])
             self.labels[title+'-box'].bind('<Leave>', hover_callbacks[title+'-leave'])
 
+    
 
     def _select_paper(self, event):
         if self.hovering != {} and self.hovering != self.selection:
@@ -461,6 +473,10 @@ class Filters(tk.Frame):
         format_line.grid(row=row, column=0, columnspan=3, sticky='w')
         
         row += 1
+        more_papers_button = tk.Button(self, text='Load More Papers', command=self.get_more_papers)
+        more_papers_button.grid(row=row, column=0)
+        
+        row += 1
         self.selected_paper_title = tk.StringVar(root, '')
         selected_paper_title_label = tk.Label(self, textvariable=self.selected_paper_title, font=title_font, bg=filters_bg, wraplength=850, justify='left')
         selected_paper_title_label.grid(row=row, column=0, columnspan=2, padx=(25, 0), pady=(45, 0), sticky='w')
@@ -533,6 +549,17 @@ class Filters(tk.Frame):
         else:
             num = 'Search to filter'
         self.num_results.set(f'{num} results')
+        
+        
+    def get_more_papers(self):
+        p = self.root.elements[Papers]
+        p.prb_papers_label.grid_forget()
+        p.nat_papers_label.grid_forget()
+        p.arx_papers_label.grid_forget()
+        p._get_PhysRevB_papers(start_page=p.prb_pages_read+1)
+        p._get_Nature_papers(start_page=p.nat_pages_read+1)
+        self._search()
+
         
     
     def _save(self):
