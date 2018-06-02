@@ -474,7 +474,7 @@ class Filters(tk.Frame):
         
         row += 1
         more_papers_button = tk.Button(self, text='Load More Papers', command=self.get_more_papers)
-        more_papers_button.grid(row=row, column=0)
+        more_papers_button.grid(row=row, column=0, padx=85, sticky='w')
         
         row += 1
         self.selected_paper_title = tk.StringVar(root, '')
